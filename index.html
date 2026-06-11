@@ -44,6 +44,7 @@
   .warn { color:var(--warn); font-size:12px; margin-top:8px; }
   .tag { display:inline-block; font-size:11px; padding:2px 7px; border-radius:6px; background:#222836; color:var(--muted); margin-left:6px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 <header>
@@ -98,10 +99,16 @@
     <div class="note">店の癖を“スタート地点”に。台数が少ない・回転が浅いほど効く。サイトセブンの汎用推測にはできない我々だけの機能。</div>
   </div>
   <div class="card">
-    <label>各台のデータを入れる（サイトセブンの台別データを見ながら）</label>
+    <label>📷 大当り一覧のスクショから自動入力（β）</label>
+    <input type="file" accept="image/*" id="ocrfile">
+    <div class="note" id="ocrstatus">サイトセブンの「大当り一覧」スクショを選ぶ→OCRで自動入力。誤読は下で手直しできる。（読み取りにネット接続が必要）</div>
+  </div>
+  <div class="card">
+    <label>各台のデータ（自動入力 or 手入力。誤りは直してね）</label>
     <div class="row"><div class="lbl">台番号</div><div class="lbl">総G数</div><div class="lbl">BB</div><div class="lbl">REG</div><div></div></div>
     <div id="rows"></div>
     <button class="ghost" onclick="addRow()">＋ 台を追加</button>
+    <button class="ghost" onclick="document.getElementById('rows').innerHTML='';" style="margin-top:6px">全消去</button>
     <button onclick="judge()">この島を判定する</button>
   </div>
   <div class="result" id="result"></div>
@@ -225,6 +232,38 @@ function addRow(no="",g="",bb="",rb=""){
   document.getElementById('rows').appendChild(d);
 }
 addRow();addRow();addRow();
+
+// ===== OCR：大当り一覧スクショ→自動入力 =====
+function parseText(text){
+  const out=[];
+  text.split('\n').forEach(line=>{
+    const ns=(line.match(/\d+/g)||[]).map(Number);
+    if(ns.length<4) return;
+    const gi=ns.findIndex(n=>n>=1000&&n<=99999);  // 累計ゲームは4-5桁
+    if(gi<1) return;                                // 台番がGの前にあるはず（平均行/ヘッダは除外）
+    const no=ns[gi-1], g=ns[gi], bb=ns[gi+1], rb=ns[gi+2];
+    if(bb==null||rb==null||bb>300||rb>300) return; // BB/RBは小さい
+    out.push({no,g,bb,rb});
+  });
+  return out;
+}
+const ocrfile=document.getElementById('ocrfile');
+if(ocrfile) ocrfile.onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const st=document.getElementById('ocrstatus');
+  if(typeof Tesseract==='undefined'){st.textContent='⚠ OCRライブラリ未読込（ネット接続が必要）。手入力で。';return;}
+  st.textContent='読み取り中…（初回は辞書ダウンロードで数十秒かかります）';
+  try{
+    const worker=await Tesseract.createWorker('eng');
+    const {data}=await worker.recognize(f);
+    await worker.terminate();
+    const rows=parseText(data.text);
+    if(!rows.length){st.textContent='⚠ 表をうまく読めなかった。手入力で入れてね。';return;}
+    document.getElementById('rows').innerHTML='';
+    rows.forEach(r=>addRow(r.no,r.g,r.bb,r.rb));
+    st.textContent=`✓ ${rows.length}台を自動入力した。誤読がないか見て、直して「判定」を押して。`;
+  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（手入力で）'; }
+};
 
 function judge(){
   const spec=MACHINES[sel.value];
