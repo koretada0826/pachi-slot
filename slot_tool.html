@@ -44,7 +44,6 @@
   .warn { color:var(--warn); font-size:12px; margin-top:8px; }
   .tag { display:inline-block; font-size:11px; padding:2px 7px; border-radius:6px; background:#222836; color:var(--muted); margin-left:6px; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 <header>
@@ -99,15 +98,15 @@
     <div class="note">店の癖を“スタート地点”に。台数が少ない・回転が浅いほど効く。サイトセブンの汎用推測にはできない我々だけの機能。</div>
   </div>
   <div class="card">
-    <label>方法A：表のテキストを貼り付け（確実・iPhone推奨）</label>
+    <label>予備：表を貼り付け（OCRが不調な時だけ）</label>
     <textarea id="pastearea" rows="4" placeholder="iPhoneで写真の数字を長押し→ドラッグで全選択→コピー→ここに貼る&#10;例:&#10;61 5413 16 11 200&#10;62 6153 20 15 175" style="width:100%;box-sizing:border-box;background:#0d0f14;border:1px solid #2c3340;border-radius:9px;color:#e6e9ef;padding:10px;font-size:14px"></textarea>
     <button onclick="judgePaste()">貼り付けたデータで判定</button>
     <div class="note">サイトセブンの「大当り一覧」を開く→数字を長押し→全選択→コピー→ここに貼る→判定。これが一番確実。</div>
   </div>
   <div class="card">
-    <label>方法B：スクショから自動OCR（β・スマホだと不安定）</label>
+    <label>★おすすめ：スクショから自動（クラウドOCRで正確）</label>
     <input type="file" accept="image/*" id="ocrfile">
-    <div class="note" id="ocrstatus">スクショを選ぶ→自動読み取り。スマホで止まる時は上の「貼り付け」を使って。（初回は辞書DLで重い）</div>
+    <div class="note" id="ocrstatus">サイトセブンの「大当り一覧」スクショを選ぶ→クラウドOCRが正確に読んで自動判定。電波が必要。</div>
   </div>
   <div class="card">
     <label>各台のデータ（自動入力 or 手入力。誤りは直してね）</label>
@@ -280,25 +279,43 @@ function judgePaste(){
   // 設定タブへ結果が出るので画面下へ
   const res=document.getElementById('result'); if(res) res.scrollIntoView({behavior:'smooth'});
 }
+// クラウドOCR（OCR.space＋座標で行を再構成）：スクショ→正確に台データ抽出
+const OCR_KEY=()=>localStorage.getItem('ocrkey')||'helloworld';
+async function ocrCloud(file){
+  const fd=new FormData();
+  fd.append('apikey',OCR_KEY()); fd.append('OCREngine','2'); fd.append('isOverlayRequired','true'); fd.append('scale','true'); fd.append('file',file);
+  const res=await fetch('https://api.ocr.space/parse/image',{method:'POST',body:fd});
+  const d=await res.json();
+  if(!d.ParsedResults||!d.ParsedResults[0]) throw new Error((d.ErrorMessage&&d.ErrorMessage[0])||d.ErrorMessage||'OCR失敗');
+  const pr=d.ParsedResults[0], ov=pr.TextOverlay;
+  if(ov&&ov.Lines&&ov.Lines.length){
+    const words=[];
+    ov.Lines.forEach(L=>L.Words.forEach(w=>{const t=(w.WordText||'').replace(/,/g,'');if(/^\d+$/.test(t))words.push({n:+t,x:w.Left,y:w.Top});}));
+    if(words.length){
+      words.sort((a,b)=>a.y-b.y);
+      const lines=[]; let cur=[words[0]];
+      for(let i=1;i<words.length;i++){ if(Math.abs(words[i].y-cur[cur.length-1].y)<=18)cur.push(words[i]); else{lines.push(cur);cur=[words[i]];} }
+      lines.push(cur);
+      const rows=[];
+      lines.forEach(r=>{r.sort((a,b)=>a.x-b.x);const ns=r.map(w=>w.n);const gi=ns.findIndex(n=>n>=1000&&n<=12000);if(gi<1)return;const no=ns[gi-1],g=ns[gi],bb=ns[gi+1],rb=ns[gi+2];if(bb==null||rb==null||bb>99||rb>99)return;rows.push({no,g,bb,rb});});
+      if(rows.length) return rows;
+    }
+  }
+  return parseText(pr.ParsedText||'');
+}
 const ocrfile=document.getElementById('ocrfile');
 if(ocrfile) ocrfile.onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
   const st=document.getElementById('ocrstatus');
-  if(typeof Tesseract==='undefined'){st.textContent='⚠ OCRライブラリが読み込めてない（電波が必要）。上の「貼り付け」を使って。';return;}
-  st.textContent='📷 読み取り開始…（初回は辞書DLで重い）';
+  st.textContent='📷 クラウドOCRで読み取り中…（数秒・電波必要）';
   try{
-    const worker=await Tesseract.createWorker('eng',1,{logger:m=>{
-      if(m.status&&m.progress!=null) st.textContent=`📷 ${m.status} ${Math.round(m.progress*100)}%`;
-    }});
-    const {data}=await worker.recognize(f);
-    await worker.terminate();
-    const rows=parseText(data.text);
-    if(!rows.length){st.textContent='⚠ 表を読めなかった（誤読が多い）。手入力 or このスクショをClaudeに送って。';return;}
+    const rows=await ocrCloud(f);
+    if(!rows.length){st.textContent='⚠ 読めなかった。スクショを撮り直すか、上の貼り付けで。';return;}
     document.getElementById('rows').innerHTML='';
     rows.forEach(r=>addRow(r.no,r.g,r.bb,r.rb));
-    judge(); // 自動で判定まで実行
-    st.textContent=`✓ ${rows.length}台を読み取り→判定した。下のランキング確認。誤読があれば数字を直して再「判定」。`;
-  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（手入力 or Claudeに送って）'; }
+    judge();
+    st.textContent=`✓ ${rows.length}台を読み取り→判定した。下のランキング確認。誤りがあれば数字を直して再「判定」。`;
+  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（貼り付けを試して）'; }
 };
 
 function judge(){
@@ -499,13 +516,9 @@ async function recordStore(){
   } else {
     const f=document.getElementById('rec_file').files[0];
     if(!f){alert('表を貼り付ける or スクショを選んでね');return;}
-    if(typeof Tesseract==='undefined'){st.textContent='⚠ OCR未読込（電波）。上の貼り付けを使って。';return;}
-    st.textContent='📷 読み取り中…（重い）';
-    try{
-      const worker=await Tesseract.createWorker('eng');
-      const {data}=await worker.recognize(f); await worker.terminate();
-      rows=parseText(data.text);
-    }catch(err){ st.textContent='OCR失敗:'+(err.message||err)+'（貼り付けで）';return; }
+    st.textContent='📷 クラウドOCRで読み取り中…（数秒）';
+    try{ rows=await ocrCloud(f); }
+    catch(err){ st.textContent='OCR失敗:'+(err.message||err)+'（貼り付けで）';return; }
     if(!rows.length){st.textContent='⚠ 読めなかった。貼り付けで試して。';return;}
   }
   let high=0;
