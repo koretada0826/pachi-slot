@@ -117,7 +117,19 @@
 <!-- ① 店選び -->
 <div class="page active" id="mise">
   <div class="card">
-    <label>店ランキング（ジャグラー系・平均出率）<span class="tag">2026-06 池袋・北区・戸田</span></label>
+    <label>📷 サイトセブンの店データを記録（①を本物に）</label>
+    <input id="rec_hall" placeholder="店名（例: マルハン池袋）">
+    <select id="rec_machine" style="margin-top:6px"></select>
+    <input type="file" accept="image/*" id="rec_file" style="margin-top:6px">
+    <button onclick="recordStore()">この店を記録</button>
+    <div class="note" id="rec_status">閉店後〜翌朝に、店のジャグラー大当り一覧をスクショ→高設定台数を自動カウント→記録。貯めるほど「君だけの店ランキング」に。</div>
+  </div>
+  <div class="card">
+    <label>★ 君の記録（サイトセブン実データ）</label>
+    <div id="mystores"><div class="note">まだ記録なし。上で店を記録してね。</div></div>
+  </div>
+  <div class="card">
+    <label>参考: 自動収集ランキング <span class="tag">みんレポ仮データ</span></label>
     <button class="ghost" onclick="nearby()" style="margin-bottom:10px">📍 現在地から近い順に並べる</button>
     <div id="geonote" class="note" style="margin-bottom:8px"></div>
     <div id="halls"></div>
@@ -448,6 +460,45 @@ function renderLogs(){
   ls.innerHTML=logs.map(l=>`<div class="hall"><span class="name">${l.date||'-'} ${l.hall||''} <span style="font-size:11px;color:#8a93a6">${l.kishu||''}</span></span><span class="pct ${l.bal>=0?'g':'r'}">${l.bal>=0?'+':''}${l.bal.toLocaleString()}</span></div>`).join('');
 }
 renderLogs();
+
+// ===== ① 店記録（サイトセブンのスクショ→高設定台数→君だけの店ランキング）=====
+const recSel=document.getElementById('rec_machine');
+if(recSel) Object.keys(MACHINES).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;recSel.appendChild(o);});
+function getStoreLog(){try{return JSON.parse(localStorage.getItem('storelog')||'[]')}catch(e){return[]}}
+function saveStoreLog(l){localStorage.setItem('storelog',JSON.stringify(l));}
+async function recordStore(){
+  const hall=(document.getElementById('rec_hall').value||'').trim();
+  const f=document.getElementById('rec_file').files[0];
+  const spec=MACHINES[recSel.value]; const st=document.getElementById('rec_status');
+  if(!hall){alert('店名を入れてね');return;}
+  if(!f){alert('スクショを選んでね');return;}
+  if(typeof Tesseract==='undefined'){st.textContent='⚠ OCR未読込（電波が必要）';return;}
+  st.textContent='📷 読み取り中…（数十秒）';
+  try{
+    const worker=await Tesseract.createWorker('eng');
+    const {data}=await worker.recognize(f); await worker.terminate();
+    const rows=parseText(data.text);
+    if(!rows.length){st.textContent='⚠ 読めなかった。スクショ撮り直すか、③台(設定)で手入力を。';return;}
+    let high=0;
+    rows.forEach(r=>{const p=estimate(spec,r.g,r.bb,r.rb); if(p[4]+p[5]>=0.5) high++;});
+    const d=new Date(); const ds=`${d.getMonth()+1}/${d.getDate()}`;
+    const log=getStoreLog();
+    log.unshift({hall, machine:recSel.value, date:ds, total:rows.length, high, rate:Math.round(high/rows.length*100)});
+    saveStoreLog(log); renderStores();
+    st.textContent=`✓ ${hall}（${recSel.value}）: ${rows.length}台中 ${high}台が高設定っぽい（${Math.round(high/rows.length*100)}%）。記録した。`;
+    document.getElementById('rec_file').value='';
+  }catch(err){ st.textContent='OCR失敗: '+(err.message||err); }
+}
+function renderStores(){
+  const log=getStoreLog(); const el=document.getElementById('mystores');
+  if(!log.length){el.innerHTML='<div class="note">まだ記録なし。上で店を記録してね。</div>';return;}
+  const byHall={}; log.forEach(l=>{(byHall[l.hall]=byHall[l.hall]||[]).push(l);});
+  const agg=Object.entries(byHall).map(([h,ls])=>({hall:h,days:ls.length,avgRate:ls.reduce((a,b)=>a+b.rate,0)/ls.length,last:ls[0]}));
+  agg.sort((a,b)=>b.avgRate-a.avgRate);
+  el.innerHTML=agg.map(a=>`<div class="hall"><span class="name">${a.hall} <span style="font-size:11px;color:#8a93a6">${a.days}日記録・最新${a.last.date}は${a.last.high}/${a.last.total}台</span></span><span class="pct ${a.avgRate>=20?'g':(a.avgRate>=10?'n':'r')}">${a.avgRate.toFixed(0)}% 高設定</span></div>`).join('')
+    +'<div class="note">高設定率＝記録した日の平均。高いほど設定を入れる店＝狙う価値あり。閉店後に何日も記録すると精度UP。</div>';
+}
+renderStores();
 
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
