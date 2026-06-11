@@ -323,10 +323,19 @@ function nearby(){
 // 各機種の「現在ゲーム数→期待値(等価・円)」表。出典つき。機種を足すだけで全国対応。
 const TENJO_MACHINES = {
   "バジリスク絆2": {
-    verified:true, src:"nyon777（等価・天井800G+前兆）", ceiling:800,
+    type:"table", verified:true, src:"nyon777（等価・天井800G+前兆）", ceiling:800,
     table:{0:-980,50:-502,100:-96,150:317,200:673,250:1024,300:1388,350:1760,400:2240,450:2635,500:2977,550:3372,600:3740,650:4242,700:4793,750:5236}
+  },
+  // ボーダー型（モード/周期で複雑な機種は、損益分岐Gと+1000円Gで判定）
+  "スマスロ北斗の拳": {
+    type:"boundary", verified:false, src:"p-town/altema・狙い目概算（要精査）", ceiling:1268,
+    touka:[400,700], k56:[700,800]  // [損益分岐G, +1000円超G]
+  },
+  "スマスロ モンキーターン5": {
+    type:"boundary", verified:false, src:"p-town/altema・狙い目概算（要精査）", ceiling:795,
+    touka:[250,400], k56:[400,500]
   }
-  // ← ここに機種を足す（天井期待値表を入れるだけ）。AT機・パチンコ遊タイムも同形式。
+  // ← 機種追加可。表型(table)orボーダー型(boundary)。パチンコ遊タイムも同形式。
 };
 function evTouka(m,G){
   const ks=Object.keys(m.table).map(Number).sort((a,b)=>a-b);
@@ -352,13 +361,21 @@ function judgeT(){
   const m=TENJO_MACHINES[tsel.value]; const G=+document.getElementById('curG').value.replace(/[, ]/g,'');
   const k50=+document.getElementById('koukan').value; const el=document.getElementById('tresult'); el.innerHTML='';
   if(!G&&G!==0){el.innerHTML='<div class="note">現在ゲーム数を入れてね。</div>';return;}
-  const r=evAdjusted(m,G,k50); const ev=r.ev;
-  const cls=ev>=500?'best':(ev>=0?'mid':'bad'); const vcls=ev>=500?'v-good':(ev>=0?'v-mid':'v-bad');
-  const vtxt=ev>=500?'◎ 拾え':(ev>=0?'△ 微妙':'× スルー');
+  let cls,vcls,vtxt,meta;
+  if(m.type==='boundary'){
+    const b=(k50>=1000)?m.touka:m.k56; const [be,p1k]=b;
+    if(G>=p1k){cls='best';vcls='v-good';vtxt='◎ 拾え(+1000円超)';}
+    else if(G>=be){cls='mid';vcls='v-mid';vtxt='△ プラス域';}
+    else {cls='bad';vcls='v-bad';vtxt='× スルー';}
+    meta=`損益分岐 ${be}G ／ +1000円 ${p1k}G ／ 天井まであと${Math.max(0,m.ceiling-G)}G　<span style="color:#e8b04b">※狙い目概算(精密値はサイトセブン/実測で要精査)</span>`;
+  } else {
+    const r=evAdjusted(m,G,k50); const ev=r.ev;
+    cls=ev>=500?'best':(ev>=0?'mid':'bad'); vcls=ev>=500?'v-good':(ev>=0?'v-mid':'v-bad');
+    vtxt=ev>=500?'◎ 拾え':(ev>=0?'△ 微妙':'× スルー');
+    meta=`期待値 ${ev>=0?'+':''}${ev.toLocaleString()}円　／　天井まであと${Math.max(0,m.ceiling-G)}G`+(r.approx?'　／　<span style="color:#e8b04b">非等価は近似</span>':'');
+  }
   const d=document.createElement('div'); d.className='machine '+cls;
-  d.innerHTML=`<div class="top"><span class="no">${G}G の台</span><span class="verdict ${vcls}">${vtxt}</span></div>
-    <div class="meta">期待値 ${ev>=0?'+':''}${ev.toLocaleString()}円　／　天井まであと${Math.max(0,m.ceiling-G)}G`
-    +(r.approx?'　／　<span style="color:#e8b04b">非等価は近似(要実表検証)</span>':'')+`</div>`;
+  d.innerHTML=`<div class="top"><span class="no">${G}G の台</span><span class="verdict ${vcls}">${vtxt}</span></div><div class="meta">${meta}</div>`;
   el.appendChild(d);
 }
 
