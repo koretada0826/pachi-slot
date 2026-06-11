@@ -536,7 +536,7 @@ function renderStores(){
   const byHall={}; log.forEach(l=>{(byHall[l.hall]=byHall[l.hall]||[]).push(l);});
   const agg=Object.entries(byHall).map(([h,ls])=>({hall:h,days:ls.length,avgRate:ls.reduce((a,b)=>a+b.rate,0)/ls.length,last:ls[0]}));
   agg.sort((a,b)=>b.avgRate-a.avgRate);
-  el.innerHTML=agg.map(a=>`<div class="hall"><span class="name">${a.hall} <span style="font-size:11px;color:#8a93a6">${a.days}日記録・最新${a.last.date}は${a.last.high}/${a.last.total}台</span></span><span style="display:flex;align-items:center;gap:8px"><span class="pct ${a.avgRate>=20?'g':(a.avgRate>=10?'n':'r')}">${a.avgRate.toFixed(0)}% 高設定</span><button class="del" onclick="deleteStoreHall(${JSON.stringify(a.hall)})">×</button></span></div>`).join('')
+  el.innerHTML=agg.map(a=>`<div style="padding:10px 0;border-bottom:1px solid #262c38"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.hall}</span><span style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span class="pct ${a.avgRate>=20?'g':(a.avgRate>=10?'n':'r')}" style="white-space:nowrap">${a.avgRate.toFixed(0)}% 高設定</span><button class="del" onclick="deleteStoreHall(${JSON.stringify(a.hall)})">×</button></span></div><div style="font-size:11px;color:#8a93a6;margin-top:2px">${a.days}日記録・最新${a.last.date}は${a.last.high}/${a.last.total}台</div></div>`).join('')
     +'<button class="ghost" onclick="clearStores()" style="margin-top:10px">記録を全消去</button>'
     +'<div class="note">高設定率＝記録した日の平均。×で個別削除・全消去で全部リセット。閉店後に何日も記録すると精度UP。</div>';
 }
