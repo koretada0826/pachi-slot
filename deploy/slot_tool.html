@@ -239,10 +239,12 @@ function parseText(text){
   text.split('\n').forEach(line=>{
     const ns=(line.match(/\d+/g)||[]).map(Number);
     if(ns.length<4) return;
-    const gi=ns.findIndex(n=>n>=1000&&n<=99999);  // 累計ゲームは4-5桁
-    if(gi<1) return;                                // 台番がGの前にあるはず（平均行/ヘッダは除外）
-    const no=ns[gi-1], g=ns[gi], bb=ns[gi+1], rb=ns[gi+2];
-    if(bb==null||rb==null||bb>300||rb>300) return; // BB/RBは小さい
+    const gi=ns.findIndex(n=>n>=1000&&n<=12000);   // 累計ゲーム(現実的な範囲)
+    if(gi<1) return;                                // 台番がGの前にあるはず(平均/ヘッダ除外)
+    let no=ns[gi-1], g=ns[gi], bb=ns[gi+1], rb=ns[gi+2];
+    if(bb==null||rb==null) return;
+    if(bb<0||bb>99||rb<0||rb>99) return;            // BB/RBは0-99。範囲外は誤読→その行は捨てる
+    if(no>9999) no=String(no).slice(0,3);           // 台番誤読(920等)は表示だけなので軽く補正
     out.push({no,g,bb,rb});
   });
   return out;
@@ -251,18 +253,19 @@ const ocrfile=document.getElementById('ocrfile');
 if(ocrfile) ocrfile.onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
   const st=document.getElementById('ocrstatus');
-  if(typeof Tesseract==='undefined'){st.textContent='⚠ OCRライブラリ未読込（ネット接続が必要）。手入力で。';return;}
-  st.textContent='読み取り中…（初回は辞書ダウンロードで数十秒かかります）';
+  if(typeof Tesseract==='undefined'){st.textContent='⚠ OCRライブラリが読み込めてない（電波が必要）。少し待って再選択 or 手入力で。';return;}
+  st.textContent='📷 読み取り中…（初回は数十秒・電波必要）';
   try{
     const worker=await Tesseract.createWorker('eng');
     const {data}=await worker.recognize(f);
     await worker.terminate();
     const rows=parseText(data.text);
-    if(!rows.length){st.textContent='⚠ 表をうまく読めなかった。手入力で入れてね。';return;}
+    if(!rows.length){st.textContent='⚠ 表を読めなかった（誤読が多い）。手入力 or このスクショをClaudeに送って。';return;}
     document.getElementById('rows').innerHTML='';
     rows.forEach(r=>addRow(r.no,r.g,r.bb,r.rb));
-    st.textContent=`✓ ${rows.length}台を自動入力した。誤読がないか見て、直して「判定」を押して。`;
-  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（手入力で）'; }
+    judge(); // 自動で判定まで実行
+    st.textContent=`✓ ${rows.length}台を読み取り→判定した。下のランキング確認。誤読があれば数字を直して再「判定」。`;
+  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（手入力 or Claudeに送って）'; }
 };
 
 function judge(){
