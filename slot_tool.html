@@ -120,7 +120,8 @@
       台が多くて1枚に入らなければ<b>複数枚</b>選んでOK（自動でつなぐ）。
     </div>
     <input type="file" accept="image/*" id="ocrfile" multiple style="margin-bottom:6px">
-    <div class="note" id="ocrstatus">スクショを選ぶと自動で読んで「座れ:台○」を出す。電波が必要。</div>
+    <button class="ghost" onclick="clearOcr()" style="margin-top:2px">🗑 アップロードをクリア（やり直し）</button>
+    <div class="note" id="ocrstatus">スクショを選ぶと自動で読んで「座れ:台○」を出す。電波が必要。間違えたら上の「クリア」。</div>
   </div>
   <div class="result" id="result"></div>
   <div class="card" style="border-color:#e8b04b">
@@ -332,6 +333,13 @@ function detectMachine(){
   for(const a in alias){ if(MACHINES[alias[a]] && t.indexOf(a.replace(/\s/g,''))>=0){ sel.value=alias[a]; if(typeof showSpec==='function')showSpec(); return sel.value; } }
   for(const k of Object.keys(MACHINES)){ if(t.indexOf(k.replace(/\s/g,''))>=0){ sel.value=k; if(typeof showSpec==='function')showSpec(); return k; } }
   return null;
+}
+function clearOcr(){
+  const f=document.getElementById('ocrfile'); if(f) f.value='';
+  const r=document.getElementById('result'); if(r) r.innerHTML='';
+  const rw=document.getElementById('rows'); if(rw) rw.innerHTML='';
+  const pa=document.getElementById('pastearea'); if(pa) pa.value='';
+  const st=document.getElementById('ocrstatus'); if(st) st.textContent='クリアした。もう一度スクショを選び直して。';
 }
 const ocrfile=document.getElementById('ocrfile');
 if(ocrfile) ocrfile.onchange=async e=>{
