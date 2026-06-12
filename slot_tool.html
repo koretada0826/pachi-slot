@@ -481,6 +481,8 @@ Object.keys(TENJO_MACHINES).forEach(n=>{const o=document.createElement('option')
 function showTSpec(){const m=TENJO_MACHINES[tsel.value];document.getElementById('tspecnote').textContent=
   `天井${m.ceiling}G ／ ${m.verified?'✓':'⚠'} ${m.src}`;}
 if(tsel.value){tsel.onchange=showTSpec;showTSpec();}
+// 交換率は店ごとに固定→一度選べば記憶（毎回打たない）。現在Gだけ入れればOK
+(function(){var k=document.getElementById('koukan');if(k){var s=localStorage.getItem('koukan');if(s)k.value=s;k.addEventListener('change',function(){localStorage.setItem('koukan',k.value);});}})();
 function judgeT(){
   const m=TENJO_MACHINES[tsel.value]; const G=+document.getElementById('curG').value.replace(/[, ]/g,'');
   const k50=+document.getElementById('koukan').value; const el=document.getElementById('tresult'); el.innerHTML='';
