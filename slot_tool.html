@@ -102,26 +102,26 @@
     </select>
     <div class="note">店の癖を“スタート地点”に。台数が少ない・回転が浅いほど効く。サイトセブンの汎用推測にはできない我々だけの機能。</div>
   </div>
-  <div class="card">
-    <label>予備：表を貼り付け（OCRが不調な時だけ）</label>
-    <textarea id="pastearea" rows="4" placeholder="iPhoneで写真の数字を長押し→ドラッグで全選択→コピー→ここに貼る&#10;例:&#10;61 5413 16 11 200&#10;62 6153 20 15 175" style="width:100%;box-sizing:border-box;background:#0d0f14;border:1px solid #2c3340;border-radius:9px;color:#e6e9ef;padding:10px;font-size:14px"></textarea>
-    <button onclick="judgePaste()">貼り付けたデータで判定</button>
-    <div class="note">サイトセブンの「大当り一覧」を開く→数字を長押し→全選択→コピー→ここに貼る→判定。これが一番確実。</div>
-  </div>
-  <div class="card">
-    <label>★おすすめ：スクショから自動（クラウドOCRで正確）</label>
-    <input type="file" accept="image/*" id="ocrfile">
-    <div class="note" id="ocrstatus">サイトセブンの「大当り一覧」スクショを選ぶ→クラウドOCRが正確に読んで自動判定。電波が必要。</div>
-  </div>
-  <div class="card">
-    <label>各台のデータ（自動入力 or 手入力。誤りは直してね）</label>
-    <div class="row"><div class="lbl">台番号</div><div class="lbl">総G数</div><div class="lbl">BB</div><div class="lbl">REG</div><div></div></div>
-    <div id="rows"></div>
-    <button class="ghost" onclick="addRow()">＋ 台を追加</button>
-    <button class="ghost" onclick="document.getElementById('rows').innerHTML='';" style="margin-top:6px">全消去</button>
-    <button onclick="judge()">この島を判定する</button>
+  <div class="card" style="border-color:#3ad29f">
+    <label>📷 スクショ1枚で判定（入力ゼロ）</label>
+    <input type="file" accept="image/*" id="ocrfile" style="margin-bottom:6px">
+    <div class="note" id="ocrstatus">サイトセブンor店モニターの「大当り一覧」をスクショ→選ぶだけ。自動で読んで「座れ:台○」を出す。電波が必要。</div>
   </div>
   <div class="result" id="result"></div>
+  <details class="card">
+    <summary style="cursor:pointer;color:#8a93a6;font-size:14px">うまく読めない時だけ開く（貼り付け／手直し）</summary>
+    <div style="margin-top:12px">
+      <label>表を貼り付け（iPhone文字認識でコピー→貼る）</label>
+      <textarea id="pastearea" rows="3" placeholder="例:&#10;61 5413 16 11&#10;62 6153 20 15" style="width:100%;box-sizing:border-box;background:#0d0f14;border:1px solid #2c3340;border-radius:9px;color:#e6e9ef;padding:10px;font-size:14px"></textarea>
+      <button onclick="judgePaste()">貼り付けで判定</button>
+      <label style="margin-top:14px">読み取り結果（おかしい数字だけ直す）</label>
+      <div class="row"><div class="lbl">台番号</div><div class="lbl">総G数</div><div class="lbl">BB</div><div class="lbl">REG</div><div></div></div>
+      <div id="rows"></div>
+      <button class="ghost" onclick="addRow()">＋ 台を追加</button>
+      <button class="ghost" onclick="document.getElementById('rows').innerHTML='';" style="margin-top:6px">全消去</button>
+      <button onclick="judge()">直したら再判定</button>
+    </div>
+  </details>
 </div>
 
 <!-- ① 店選び -->
@@ -297,6 +297,7 @@ async function ocrCloud(file){
   const d=await res.json();
   if(!d.ParsedResults||!d.ParsedResults[0]) throw new Error((d.ErrorMessage&&d.ErrorMessage[0])||d.ErrorMessage||'OCR失敗');
   const pr=d.ParsedResults[0], ov=pr.TextOverlay;
+  window._ocrText=pr.ParsedText||'';
   if(ov&&ov.Lines&&ov.Lines.length){
     const words=[];
     ov.Lines.forEach(L=>L.Words.forEach(w=>{const t=(w.WordText||'').replace(/,/g,'');if(/^\d+$/.test(t))words.push({n:+t,x:w.Left,y:w.Top});}));
@@ -312,6 +313,15 @@ async function ocrCloud(file){
   }
   return parseText(pr.ParsedText||'');
 }
+// スクショの機種名を自動判別→機種ドロップダウンを自動セット（脳死化）
+function detectMachine(){
+  const t=(window._ocrText||'').replace(/\s/g,'');
+  if(!t||typeof MACHINES==='undefined'||!sel) return null;
+  const alias={'ネオアイムジャグラーEX':'アイムジャグラーEX','SアイムジャグラーEX':'アイムジャグラーEX','アイムジャグラーEX':'アイムジャグラーEX'};
+  for(const a in alias){ if(MACHINES[alias[a]] && t.indexOf(a.replace(/\s/g,''))>=0){ sel.value=alias[a]; if(typeof showSpec==='function')showSpec(); return sel.value; } }
+  for(const k of Object.keys(MACHINES)){ if(t.indexOf(k.replace(/\s/g,''))>=0){ sel.value=k; if(typeof showSpec==='function')showSpec(); return k; } }
+  return null;
+}
 const ocrfile=document.getElementById('ocrfile');
 if(ocrfile) ocrfile.onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -319,12 +329,13 @@ if(ocrfile) ocrfile.onchange=async e=>{
   st.textContent='📷 クラウドOCRで読み取り中…（数秒・電波必要）';
   try{
     const rows=await ocrCloud(f);
-    if(!rows.length){st.textContent='⚠ 読めなかった。スクショを撮り直すか、上の貼り付けで。';return;}
+    if(!rows.length){st.textContent='⚠ 読めなかった。機種名ごと撮り直すか、下の「うまく読めない時」を開いて貼り付け。';return;}
+    const mac=detectMachine();
     document.getElementById('rows').innerHTML='';
     rows.forEach(r=>addRow(r.no,r.g,r.bb,r.rb));
     judge();
-    st.textContent=`✓ ${rows.length}台を読み取り→判定した。下のランキング確認。誤りがあれば数字を直して再「判定」。`;
-  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（貼り付けを試して）'; }
+    st.textContent=`✓ ${mac?('機種='+mac+'を自動判別・'):'機種は手動確認・'}${rows.length}台を読んで判定した。結果は下。`;
+  }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（下の貼り付けを試して）'; }
 };
 
 function judge(){
