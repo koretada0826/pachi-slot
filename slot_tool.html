@@ -100,9 +100,14 @@
     <div class="note">店の癖を“スタート地点”に。台数が少ない・回転が浅いほど効く。サイトセブンの汎用推測にはできない我々だけの機能。</div>
   </div>
   <div class="card" style="border-color:#3ad29f">
-    <label>📷 スクショ1枚で判定（入力ゼロ）</label>
-    <input type="file" accept="image/*" id="ocrfile" style="margin-bottom:6px">
-    <div class="note" id="ocrstatus">サイトセブンor店モニターの「大当り一覧」をスクショ→選ぶだけ。自動で読んで「座れ:台○」を出す。電波が必要。</div>
+    <label>📷 スクショで判定（入力ゼロ・複数枚OK）</label>
+    <div class="note" style="line-height:1.7;margin-bottom:8px">
+      <b>何をスクショ？</b> サイトセブンの<b>「大当り一覧」</b>（台番・累計G・BB・REGが縦に並んだ表）。<br>
+      <b>手順：</b>サイトセブンで →①店を開く →②機種（マイジャグラーV等）を選ぶ →③<b>「出玉データ」→「大当り一覧」</b> →④<b>「当日」or「前日」</b>を選ぶ →⑤その表の画面を<b>機種名ごとスクショ</b>。<br>
+      台が多くて1枚に入らなければ<b>複数枚</b>選んでOK（自動でつなぐ）。
+    </div>
+    <input type="file" accept="image/*" id="ocrfile" multiple style="margin-bottom:6px">
+    <div class="note" id="ocrstatus">スクショを選ぶと自動で読んで「座れ:台○」を出す。電波が必要。</div>
   </div>
   <div class="result" id="result"></div>
   <details class="card">
@@ -321,17 +326,21 @@ function detectMachine(){
 }
 const ocrfile=document.getElementById('ocrfile');
 if(ocrfile) ocrfile.onchange=async e=>{
-  const f=e.target.files[0]; if(!f) return;
+  const files=[...e.target.files]; if(!files.length) return;
   const st=document.getElementById('ocrstatus');
-  st.textContent='📷 クラウドOCRで読み取り中…（数秒・電波必要）';
+  st.textContent=`📷 ${files.length}枚を読み取り中…（数秒・電波必要）`;
   try{
-    const rows=await ocrCloud(f);
+    let all=[], txt='';
+    for(const f of files){ const rows=await ocrCloud(f); txt+=' '+(window._ocrText||''); all=all.concat(rows); }
+    window._ocrText=txt;  // 機種名は何枚目に写ってても拾えるよう全枚分を結合
+    const map={}; all.forEach(r=>{ if(!map[r.no]||r.g>map[r.no].g) map[r.no]=r; }); // 台番で重複統合(最大G採用)
+    const rows=Object.values(map);
     if(!rows.length){st.textContent='⚠ 読めなかった。機種名ごと撮り直すか、下の「うまく読めない時」を開いて貼り付け。';return;}
     const mac=detectMachine();
     document.getElementById('rows').innerHTML='';
     rows.forEach(r=>addRow(r.no,r.g,r.bb,r.rb));
     judge();
-    st.textContent=`✓ ${mac?('機種='+mac+'を自動判別・'):'機種は手動確認・'}${rows.length}台を読んで判定した。結果は下。`;
+    st.textContent=`✓ ${mac?('機種='+mac+'を自動判別・'):'機種は手動確認・'}${files.length}枚→${rows.length}台を読んで判定した。結果は下。`;
   }catch(err){ st.textContent='OCR失敗: '+(err.message||err)+'（下の貼り付けを試して）'; }
 };
 
