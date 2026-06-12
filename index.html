@@ -61,17 +61,13 @@
 
 <!-- 🔥 天井拾い -->
 <div class="page" id="tenjo">
-  <div class="card">
-    <label>📷 サイトセブンのスクショを入れる</label>
-    <input type="file" accept="image/*" id="shotfile">
-    <div class="note" id="shotnote">スクショを選ぶと下に表示。<b>自動読み取り(OCR)は、実スクショ1枚で調整後に起動。</b>それまでは数字を手入力。</div>
-    <img id="shotimg" style="display:none;max-width:100%;border-radius:8px;margin-top:8px">
-  </div>
-  <div class="card">
-    <label>機種を選ぶ</label>
+  <div class="card" style="border-color:#3ad29f">
+    <label>🔥 ハマり台を拾えるか判定（AT機の天井狙い）</label>
+    <div class="note">店を歩いてて「誰かが捨てたハマり台」を見つけたら → 機種を選ぶ → その台の今のゲーム数を入れる → 拾える◎か判定。設定は要らない。</div>
+    <label style="margin-top:13px">機種を選ぶ</label>
     <select id="tmachine"></select>
     <div class="note" id="tspecnote"></div>
-    <label style="margin-top:13px">交換率</label>
+    <label style="margin-top:13px">交換率（一度選べば記憶）</label>
     <select id="koukan">
       <option value="1000">等価（50枚=1000円）</option>
       <option value="893">5.6枚交換（50枚≈893円）</option>
@@ -91,9 +87,10 @@
     <div id="storeHint" class="note" style="margin-top:8px">店を選ぶと、その店が設定を入れがちな「狙い台」をAIが先に教える（スクショ不要）。</div>
   </div>
   <div class="card">
-    <label>機種を選ぶ</label>
+    <label>機種を選ぶ <span style="color:#3ad29f;font-size:12px">（スクショを入れれば自動判別・手動でもOK）</span></label>
     <select id="machine"></select>
     <div class="note" id="specnote"></div>
+    <div class="note">対応＝マイジャグV・アイムEX・ゴーゴー3・ファンキー2（設定が読める確定スペック）。他機種は順次。</div>
     <label style="margin-top:13px">店の状況（①②の知識を反映）</label>
     <select id="prior">
       <option value="normal">普通（情報なし）</option>
@@ -505,11 +502,6 @@ function judgeT(){
   el.appendChild(d);
 }
 
-// ========== スクショ表示（OCRは実スクショ調整後に起動）==========
-const sf=document.getElementById('shotfile');
-if(sf) sf.onchange=e=>{const f=e.target.files[0];if(!f)return;const img=document.getElementById('shotimg');
-  img.src=URL.createObjectURL(f);img.style.display='block';
-  document.getElementById('shotnote').innerHTML='✓ 表示中。<b>OCR起動には、この画面のスクショを僕(Claude)に1枚送って調整が必要。</b>今は下に手入力を。';};
 
 // ========== 📝 記録（自己監査＝AI差別化の燃料・スマホに保存）==========
 function getLogs(){try{return JSON.parse(localStorage.getItem('slotlogs')||'[]')}catch(e){return[]}}
