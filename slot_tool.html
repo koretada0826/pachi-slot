@@ -67,6 +67,10 @@
     <label style="margin-top:13px">機種を選ぶ</label>
     <select id="tmachine"></select>
     <div class="note" id="tspecnote"></div>
+    <div id="genCeilWrap" style="display:none">
+      <label style="margin-top:13px">この機種の天井ゲーム数（台の説明 or ネットで確認）</label>
+      <input id="ceilG" inputmode="numeric" placeholder="例: 1268（北斗）">
+    </div>
     <label style="margin-top:13px">交換率（一度選べば記憶）</label>
     <select id="koukan">
       <option value="1000">等価（50枚=1000円）</option>
@@ -387,7 +391,7 @@ function judge(){
 // ① 店ランキング + ② 日付傾向（取得済みデータ。2026-06・池袋/北区/戸田）
 const RANK=[{"name":"DAS東十条店","deri":101.0,"over":62,"samai":223,"n":66,"trust":false,"note":"データ少"},{"name":"マルハン池袋店","deri":100.7,"over":66,"samai":184,"n":140,"trust":true,"note":""},{"name":"ジュラク王子店","deri":100.5,"over":61,"samai":121,"n":180,"trust":true,"note":""},{"name":"パラッツォ千川店","deri":100.4,"over":88,"samai":97,"n":120,"trust":true,"note":""},{"name":"王子龍龍","deri":100.1,"over":51,"samai":173,"n":145,"trust":false,"note":"イベント日偏り"},{"name":"ベラジオ東十条店","deri":100.0,"over":100,"samai":0,"n":64,"trust":false,"note":"データ異常"},{"name":"P-PORT PREGO EX池袋南口","deri":99.8,"over":47,"samai":95,"n":102,"trust":true,"note":""},{"name":"楽園池袋店グリーンサイド","deri":99.8,"over":49,"samai":36,"n":140,"trust":true,"note":""},{"name":"K-1赤羽店","deri":99.4,"over":50,"samai":84,"n":141,"trust":true,"note":""},{"name":"アバンザ十条","deri":99.2,"over":45,"samai":7,"n":100,"trust":true,"note":""},{"name":"やすだ西池袋6号店","deri":99.0,"over":46,"samai":-47,"n":120,"trust":true,"note":""},{"name":"アミューズメントパークジュラク2","deri":98.4,"over":44,"samai":-5,"n":135,"trust":true,"note":""},{"name":"やすだ戸田店","deri":98.3,"over":29,"samai":-169,"n":120,"trust":true,"note":""},{"name":"TOHO池袋","deri":97.7,"over":32,"samai":-73,"n":801,"trust":true,"note":""},{"name":"巣鴨会館","deri":97.5,"over":38,"samai":-48,"n":95,"trust":true,"note":""},{"name":"ニューひかり本店","deri":96.8,"over":40,"samai":-57,"n":81,"trust":true,"note":""}];
 /*SITE_INTEL_START*/
-const SITE_INTEL={"K-1赤羽店": {"avg": 3.65, "verdict": "設定をよく使う(優良候補)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["アイムEX459", "アイムEX456", "アイムEX441"], "shibui": "なし", "mac": "アイムEX・ゴーゴー3・マイジャグV"}, "コンサートホール志村店": {"avg": 3.42, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV304", "マイジャグV302", "マイジャグV303"], "shibui": "なし", "mac": "マイジャグV"}, "王子龍龍": {"avg": 3.16, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV165", "マイジャグV160", "マイジャグV168"], "shibui": "木", "mac": "マイジャグV"}, "アミューズメントパークジュラク2": {"avg": 3.14, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV565", "マイジャグV527", "マイジャグV526"], "shibui": "火・木", "mac": "マイジャグV"}, "楽園 ハッピーロード大山": {"avg": 2.97, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV2665", "マイジャグV2638", "マイジャグV2658"], "shibui": "なし", "mac": "マイジャグV"}, "マルハン池袋店": {"avg": 2.9, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV101", "マイジャグV63", "マイジャグV90"], "shibui": "月", "mac": "マイジャグV"}, "楽園池袋店": {"avg": 2.88, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV3132", "マイジャグV3133", "マイジャグV3128"], "shibui": "木", "mac": "マイジャグV"}};
+const SITE_INTEL={"K-1赤羽店": {"avg": 3.57, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["アイムEX459", "アイムEX456", "アイムEX441"], "shibui": "なし", "mac": "アイムEX・ファンキー2・ゴーゴー3・マイジャグV"}, "コンサートホール志村店": {"avg": 3.42, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV304", "マイジャグV302", "マイジャグV303"], "shibui": "なし", "mac": "マイジャグV"}, "王子龍龍": {"avg": 3.16, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV165", "マイジャグV160", "マイジャグV168"], "shibui": "木", "mac": "マイジャグV"}, "アミューズメントパークジュラク2": {"avg": 3.14, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV565", "マイジャグV527", "マイジャグV526"], "shibui": "火・木", "mac": "マイジャグV"}, "楽園 ハッピーロード大山": {"avg": 2.97, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV2665", "マイジャグV2638", "マイジャグV2658"], "shibui": "なし", "mac": "マイジャグV"}, "マルハン池袋店": {"avg": 2.9, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV101", "マイジャグV63", "マイジャグV90"], "shibui": "月", "mac": "マイジャグV"}, "楽園池袋店": {"avg": 2.88, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["マイジャグV3132", "マイジャグV3133", "マイジャグV3128"], "shibui": "木", "mac": "マイジャグV"}};
 /*SITE_INTEL_END*/
 const DAYS={"ジュラク王子店":[{"lab":"1のつく日","n":27,"diff":1.1},{"lab":"5のつく日","n":18,"diff":0.8},{"lab":"4のつく日","n":18,"diff":-1.3},{"lab":"7のつく日","n":18,"diff":-1.7}],"マルハン池袋店":[{"lab":"7のつく日","n":14,"diff":0.5},{"lab":"月末","n":28,"diff":0.3},{"lab":"3のつく日","n":14,"diff":-1.0}],"パラッツォ千川店":[{"lab":"1のつく日","n":18,"diff":0.9},{"lab":"月末","n":24,"diff":0.8}],"TOHO池袋":[{"lab":"月末","n":81,"diff":1.1},{"lab":"4のつく日","n":83,"diff":-0.8},{"lab":"1のつく日","n":94,"diff":-0.9}]};
 // 店の座標（エリア基準の近似。新エリアは解析時に追加）
@@ -484,16 +488,37 @@ function evAdjusted(m,G,k50){
 }
 const tsel=document.getElementById('tmachine');
 Object.keys(TENJO_MACHINES).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;tsel.appendChild(o);});
-function showTSpec(){const m=TENJO_MACHINES[tsel.value];document.getElementById('tspecnote').textContent=
-  `天井${m.ceiling}G ／ ${m.verified?'✓':'⚠'} ${m.src}`;}
+{const o=document.createElement('option');o.value='__gen';o.textContent='🔧 その他のAT機（天井Gを手入力）';tsel.appendChild(o);}
+function showTSpec(){
+  const gw=document.getElementById('genCeilWrap');
+  if(tsel.value==='__gen'){ gw.style.display='block';
+    document.getElementById('tspecnote').innerHTML='<span style="color:#e8b04b">どんな機種でもOK。天井Gを入れて使う。判定はざっくり概算（機種ごとの精密さは無し・等価前提）。</span>'; return; }
+  gw.style.display='none';
+  const m=TENJO_MACHINES[tsel.value];
+  document.getElementById('tspecnote').textContent=`天井${m.ceiling}G ／ ${m.verified?'✓':'⚠'} ${m.src}`;
+}
 if(tsel.value){tsel.onchange=showTSpec;showTSpec();}
 // 交換率は店ごとに固定→一度選べば記憶（毎回打たない）。現在Gだけ入れればOK
 (function(){var k=document.getElementById('koukan');if(k){var s=localStorage.getItem('koukan');if(s)k.value=s;k.addEventListener('change',function(){localStorage.setItem('koukan',k.value);});}})();
 function judgeT(){
-  const m=TENJO_MACHINES[tsel.value]; const G=+document.getElementById('curG').value.replace(/[, ]/g,'');
+  const G=+document.getElementById('curG').value.replace(/[, ]/g,'');
   const k50=+document.getElementById('koukan').value; const el=document.getElementById('tresult'); el.innerHTML='';
   if(!G&&G!==0){el.innerHTML='<div class="note">現在ゲーム数を入れてね。</div>';return;}
-  let cls,vcls,vtxt,meta;
+  let cls,vcls,vtxt,meta,head=`${G}G の台`;
+  if(tsel.value==='__gen'){
+    const C=+document.getElementById('ceilG').value.replace(/[, ]/g,'');
+    if(!C){el.innerHTML='<div class="note">天井ゲーム数を入れてね（台の説明やネットで確認）。</div>';return;}
+    const ratio=G/C;
+    if(ratio>=0.65){cls='best';vcls='v-good';vtxt='◎ 拾え寄り';}
+    else if(ratio>=0.5){cls='mid';vcls='v-mid';vtxt='△ 微妙';}
+    else {cls='bad';vcls='v-bad';vtxt='× スルー寄り';}
+    meta=`天井まであと${Math.max(0,C-G)}G（${Math.round(ratio*100)}%到達）　<span style="color:#e8b04b">※ざっくり概算。深いほど拾い得・機種で損益分岐は前後する</span>`;
+    head=`${G}G の台（天井${C}G）`;
+    const dg=document.createElement('div'); dg.className='machine '+cls;
+    dg.innerHTML=`<div class="top"><span class="no">${head}</span><span class="verdict ${vcls}">${vtxt}</span></div><div class="meta">${meta}</div>`;
+    el.appendChild(dg); return;
+  }
+  const m=TENJO_MACHINES[tsel.value];
   if(m.type==='boundary'){
     const b=(k50>=1000)?m.touka:m.k56; const [be,p1k]=b;
     if(G>=p1k){cls='best';vcls='v-good';vtxt='◎ 拾え(+1000円超)';}
