@@ -472,16 +472,23 @@ const TENJO_MACHINES = {
     type:"table", verified:true, src:"nyon777（等価・天井800G+前兆）", ceiling:800,
     table:{0:-980,50:-502,100:-96,150:317,200:673,250:1024,300:1388,350:1760,400:2240,450:2635,500:2977,550:3372,600:3740,650:4242,700:4793,750:5236}
   },
-  // ボーダー型（モード/周期で複雑な機種は、損益分岐Gと+1000円Gで判定）
+  // ボーダー型（損益分岐Gと+1000円Gで判定）。狙い目はaltema/p-town実値ベース
   "スマスロ北斗の拳": {
-    type:"boundary", verified:false, src:"p-town/altema・狙い目概算（要精査）", ceiling:1268,
-    touka:[400,700], k56:[700,800]  // [損益分岐G, +1000円超G]
+    type:"boundary", verified:true, src:"altema/p-town（損益分岐 等価550G/56枚680G・+1000円超は概算）", ceiling:1268,
+    touka:[550,800], k56:[680,900]  // [損益分岐G, +1000円超G(概算)]
   },
-  "スマスロ モンキーターン5": {
-    type:"boundary", verified:false, src:"p-town/altema・狙い目概算（要精査）", ceiling:795,
+  "スマスロ モンキーターンV": {
+    type:"boundary", verified:true, src:"altema/p-town（等価250G〜/+1000円400G〜）", ceiling:1000,
     touka:[250,400], k56:[400,500]
+  },
+  // 到達率型（天井Gは実値、判定は天井到達率のザックリ概算）
+  "スマスロ ミリオンゴッド-神々の軌跡-": {
+    type:"ratio", verified:false, src:"slobase/p-town（天井1480G・機械割114.6%・狙い目は到達率概算）", ceiling:1480
+  },
+  "スマスロ 革命機ヴァルヴレイヴ": {
+    type:"ratio", verified:false, src:"ちょんぼりすた（AT/ボーナス間1500G・狙い目は到達率概算）", ceiling:1500
   }
-  // ← 機種追加可。表型(table)orボーダー型(boundary)。パチンコ遊タイムも同形式。
+  // ← 機種追加可。table型/boundary型/ratio型。
 };
 function evTouka(m,G){
   const ks=Object.keys(m.table).map(Number).sort((a,b)=>a-b);
@@ -531,7 +538,13 @@ function judgeT(){
     el.appendChild(dg); return;
   }
   const m=TENJO_MACHINES[tsel.value];
-  if(m.type==='boundary'){
+  if(m.type==='ratio'){
+    const ratio=G/m.ceiling;
+    if(ratio>=0.7){cls='best';vcls='v-good';vtxt='深い＝拾える可能性大';}
+    else if(ratio>=0.5){cls='mid';vcls='v-mid';vtxt='中間＝機種次第';}
+    else {cls='bad';vcls='v-bad';vtxt='浅い＝スルー無難';}
+    meta=`天井${m.ceiling}G ／ あと${Math.max(0,m.ceiling-G)}G（${Math.round(ratio*100)}%到達）<br><span style="color:#e8b04b">⚠ 天井Gは実値、判定は到達率のザックリ概算（正確な損益分岐は機種で前後）</span>`;
+  } else if(m.type==='boundary'){
     const b=(k50>=1000)?m.touka:m.k56; const [be,p1k]=b;
     if(G>=p1k){cls='best';vcls='v-good';vtxt='◎ 拾え(+1000円超)';}
     else if(G>=be){cls='mid';vcls='v-mid';vtxt='△ プラス域';}
