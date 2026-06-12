@@ -89,6 +89,7 @@
     <label>📍 今いる店（AIのクセを反映）</label>
     <select id="curStore"><option value="">店を選ぶ…</option></select>
     <div id="storeHint" class="note" style="margin-top:8px">店を選ぶと、その店が設定を入れがちな「狙い台」をAIが先に教える（スクショ不要）。</div>
+    <div class="note" style="margin-top:8px;color:#e8b04b">⚠ 優先順位：<b>「狙い台(クセ)」は最初に見る台の目安。下のスクショ判定で今日の実数字が出たら、必ずそっちを優先</b>（今日の数字が真実）。両方一致したら濃厚。</div>
   </div>
   <div class="card">
     <label>機種を選ぶ <span style="color:#3ad29f;font-size:12px">（スクショを入れれば自動判別・手動でもOK）</span></label>
@@ -488,7 +489,7 @@ function evAdjusted(m,G,k50){
 }
 const tsel=document.getElementById('tmachine');
 Object.keys(TENJO_MACHINES).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;tsel.appendChild(o);});
-{const o=document.createElement('option');o.value='__gen';o.textContent='🔧 その他のAT機（天井Gを手入力）';tsel.appendChild(o);}
+{const o=document.createElement('option');o.value='__gen';o.textContent='その他のAT機（天井Gを手入力）';tsel.appendChild(o);}
 function showTSpec(){
   const gw=document.getElementById('genCeilWrap');
   if(tsel.value==='__gen'){ gw.style.display='block';
@@ -509,10 +510,10 @@ function judgeT(){
     const C=+document.getElementById('ceilG').value.replace(/[, ]/g,'');
     if(!C){el.innerHTML='<div class="note">天井ゲーム数を入れてね（台の説明やネットで確認）。</div>';return;}
     const ratio=G/C;
-    if(ratio>=0.65){cls='best';vcls='v-good';vtxt='◎ 拾え寄り';}
-    else if(ratio>=0.5){cls='mid';vcls='v-mid';vtxt='△ 微妙';}
-    else {cls='bad';vcls='v-bad';vtxt='× スルー寄り';}
-    meta=`天井まであと${Math.max(0,C-G)}G（${Math.round(ratio*100)}%到達）　<span style="color:#e8b04b">※ざっくり概算。深いほど拾い得・機種で損益分岐は前後する</span>`;
+    if(ratio>=0.7){cls='best';vcls='v-good';vtxt='深い＝拾える可能性大';}
+    else if(ratio>=0.5){cls='mid';vcls='v-mid';vtxt='中間＝機種次第';}
+    else {cls='bad';vcls='v-bad';vtxt='浅い＝スルー無難';}
+    meta=`天井まであと${Math.max(0,C-G)}G（${Math.round(ratio*100)}%到達）<br><span style="color:#e8b04b">⚠ これは「天井への到達率」だけのザックリ目安。機種ごとの正確な損益分岐ではない。ギリギリ(50〜69%)は信用せず、深いハマり(70%+)で拾う安全運用を。よく打つ機種は俺に言えば正確な値を入れる。</span>`;
     head=`${G}G の台（天井${C}G）`;
     const dg=document.createElement('div'); dg.className='machine '+cls;
     dg.innerHTML=`<div class="top"><span class="no">${head}</span><span class="verdict ${vcls}">${vtxt}</span></div><div class="meta">${meta}</div>`;
