@@ -375,16 +375,27 @@ function judge(){
       <div class="meta">この島、${okG.length}台中${highCnt}台が設定4以上っぽい。店が島ごと入れた疑い＝島ごと狙える。</div>`;
     el.appendChild(a);
   }
+  // ①クセの狙い台（今いる店×今の機種）を集める→③の高設定台と一致したら激アツ
+  const MAC_SHORT={"マイジャグラーV":"マイジャグV","ゴーゴージャグラー3":"ゴーゴー3","アイムジャグラーEX":"アイムEX","ファンキージャグラー2":"ファンキー2"};
+  const kuseSet=new Set();
+  const csEl=document.getElementById('curStore'); const csv=csEl?csEl.value:'';
+  if(csv && typeof SITE_INTEL!=='undefined' && SITE_INTEL[csv] && SITE_INTEL[csv].fav){
+    const short=MAC_SHORT[sel.value]||sel.value;
+    SITE_INTEL[csv].fav.forEach(f=>{ if(f.indexOf(short)===0) kuseSet.add(f.slice(short.length)); });
+  }
   out.forEach((m,i)=>{
+    const kuseHit=kuseSet.has(String(m.no)) && m.high>=0.30;
     const cls=m.high>=0.55?'best':(m.high>=0.30?'mid':'bad');
     const vcls=m.high>=0.55?'v-good':(m.high>=0.30?'v-mid':'v-bad');
-    const vtxt=m.high>=0.55?'◎ 座れ':(m.high>=0.30?'△ 次点':'× 避ける');
+    let vtxt=m.high>=0.55?'◎ 座れ':(m.high>=0.30?'△ 次点':'× 避ける');
+    if(kuseHit && m.high>=0.55) vtxt='🔥 激アツ 座れ';
+    const kuseBadge=kuseHit?'<span class="tag" style="color:#e2574c;background:#3a1f1f">🔥クセ一致</span>':'';
     const regP=m.rb?('1/'+(m.G/m.rb).toFixed(0)):'-';
     const d=document.createElement('div'); d.className='machine '+cls;
-    d.innerHTML=`<div class="top"><span class="no">${i===0?'👑 ':''}${m.no}番台</span>
+    d.innerHTML=`<div class="top"><span class="no">${i===0?'👑 ':''}${m.no}番台 ${kuseBadge}</span>
       <span class="verdict ${vcls}">${vtxt}</span></div>
       <div class="bar"><i style="width:${(m.high*100).toFixed(0)}%"></i></div>
-      <div class="meta">高設定(5-6) ${(m.high*100).toFixed(0)}% ／ 設定6 ${(m.six*100).toFixed(0)}% ／ REG ${regP}（軽いほど高設定）</div>`;
+      <div class="meta">高設定(5-6) ${(m.high*100).toFixed(0)}% ／ 設定6 ${(m.six*100).toFixed(0)}% ／ REG ${regP}（軽いほど高設定）${kuseHit?' ／ <b style="color:#e2574c">店のクセ通り＝今日も濃厚</b>':''}</div>`;
     el.appendChild(d);
   });
 }
