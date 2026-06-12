@@ -138,20 +138,6 @@
     <div id="aiPanel"><div class="note">分析データ読込中…</div></div>
   </div>
   <div class="card">
-    <label>店データを記録（①を本物に）</label>
-    <input id="rec_hall" placeholder="店名（例: マルハン池袋）">
-    <select id="rec_machine" style="margin-top:6px"></select>
-    <textarea id="rec_paste" rows="3" placeholder="大当り一覧の表をコピーして貼り付け（iPhone文字認識が確実）" style="width:100%;box-sizing:border-box;margin-top:6px;background:#0d0f14;border:1px solid #2c3340;border-radius:9px;color:#e6e9ef;padding:10px;font-size:14px"></textarea>
-    <div class="note" style="margin:4px 0">↑貼り付け（確実）／ ↓スクショ自動（β・スマホ不安定）</div>
-    <input type="file" accept="image/*" id="rec_file">
-    <button onclick="recordStore()" style="margin-top:8px">この店を記録</button>
-    <div class="note" id="rec_status">閉店後〜翌朝に、店のジャグラー大当り一覧を「貼り付け」or「スクショ」→高設定台数を自動カウント→記録。貯めるほど「君だけの店ランキング」に。</div>
-  </div>
-  <div class="card">
-    <label>★ 君の記録（サイトセブン実データ）</label>
-    <div id="mystores"><div class="note">まだ記録なし。上で店を記録してね。</div></div>
-  </div>
-  <div class="card">
     <label>参考: 自動収集ランキング <span class="tag">みんレポ仮データ</span></label>
     <button class="ghost" onclick="nearby()" style="margin-bottom:10px">📍 現在地から近い順に並べる</button>
     <div id="geonote" class="note" style="margin-bottom:8px"></div>
@@ -616,7 +602,8 @@ async function recordStore(){
   document.getElementById('rec_file').value=''; document.getElementById('rec_paste').value='';
 }
 function renderStores(){
-  const log=getStoreLog(); const el=document.getElementById('mystores');
+  const el=document.getElementById('mystores'); if(!el) return; // 手入力記録UIは廃止(Claudeが収集)
+  const log=getStoreLog();
   if(!log.length){el.innerHTML='<div class="note">まだ記録なし。上で店を記録してね。</div>';return;}
   const byHall={}; log.forEach(l=>{(byHall[l.hall]=byHall[l.hall]||[]).push(l);});
   const agg=Object.entries(byHall).map(([h,ls])=>({hall:h,days:ls.length,avgRate:ls.reduce((a,b)=>a+b.rate,0)/ls.length,last:ls[0]}));
