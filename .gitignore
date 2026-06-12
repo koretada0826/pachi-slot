@@ -3,3 +3,23 @@ __pycache__/
 *.log
 .DS_Store
 node_modules/
+s7-profile/
+s7_*
+s7*.log
+*.png
+ui_*.png
+data/
+deploy/
+
+# scraping tooling & notes — keep local, do not publish
+RESUME_siteseven.md
+build_store_intel.py
+store_pattern.py
+settei_estimator.py
+store_intel.json
+*_week.json
+minrepo_scraper.py
+corridor_scan.py
+hall_select.py
+deep_scan.py
+kizuna2_ev.py

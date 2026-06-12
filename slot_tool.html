@@ -121,6 +121,10 @@
 
 <!-- ① 店選び -->
 <div class="page active" id="mise">
+  <div class="card" id="aiCard" style="border-color:#3ad29f">
+    <label>🤖 AI分析（サイトセブン・マイジャグラーV 7日）</label>
+    <div id="aiPanel"><div class="note">分析データ読込中…</div></div>
+  </div>
   <div class="card">
     <label>店データを記録（①を本物に）</label>
     <input id="rec_hall" placeholder="店名（例: マルハン池袋）">
@@ -360,6 +364,9 @@ function judge(){
 
 // ① 店ランキング + ② 日付傾向（取得済みデータ。2026-06・池袋/北区/戸田）
 const RANK=[{"name":"DAS東十条店","deri":101.0,"over":62,"samai":223,"n":66,"trust":false,"note":"データ少"},{"name":"マルハン池袋店","deri":100.7,"over":66,"samai":184,"n":140,"trust":true,"note":""},{"name":"ジュラク王子店","deri":100.5,"over":61,"samai":121,"n":180,"trust":true,"note":""},{"name":"パラッツォ千川店","deri":100.4,"over":88,"samai":97,"n":120,"trust":true,"note":""},{"name":"王子龍龍","deri":100.1,"over":51,"samai":173,"n":145,"trust":false,"note":"イベント日偏り"},{"name":"ベラジオ東十条店","deri":100.0,"over":100,"samai":0,"n":64,"trust":false,"note":"データ異常"},{"name":"P-PORT PREGO EX池袋南口","deri":99.8,"over":47,"samai":95,"n":102,"trust":true,"note":""},{"name":"楽園池袋店グリーンサイド","deri":99.8,"over":49,"samai":36,"n":140,"trust":true,"note":""},{"name":"K-1赤羽店","deri":99.4,"over":50,"samai":84,"n":141,"trust":true,"note":""},{"name":"アバンザ十条","deri":99.2,"over":45,"samai":7,"n":100,"trust":true,"note":""},{"name":"やすだ西池袋6号店","deri":99.0,"over":46,"samai":-47,"n":120,"trust":true,"note":""},{"name":"アミューズメントパークジュラク2","deri":98.4,"over":44,"samai":-5,"n":135,"trust":true,"note":""},{"name":"やすだ戸田店","deri":98.3,"over":29,"samai":-169,"n":120,"trust":true,"note":""},{"name":"TOHO池袋","deri":97.7,"over":32,"samai":-73,"n":801,"trust":true,"note":""},{"name":"巣鴨会館","deri":97.5,"over":38,"samai":-48,"n":95,"trust":true,"note":""},{"name":"ニューひかり本店","deri":96.8,"over":40,"samai":-57,"n":81,"trust":true,"note":""}];
+/*SITE_INTEL_START*/
+const SITE_INTEL={"コンサートホール志村店": {"avg": 3.42, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["304", "302", "303"], "shibui": "なし", "mac": "マイジャグV"}, "K-1赤羽店": {"avg": 3.26, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["433", "432", "428"], "shibui": "なし", "mac": "マイジャグV"}, "王子龍龍": {"avg": 3.16, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["165", "160", "168"], "shibui": "木", "mac": "マイジャグV"}, "アミューズメントパークジュラク2": {"avg": 3.14, "verdict": "中間設定を使う(行く価値あり)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["565", "527", "526"], "shibui": "火・木", "mac": "マイジャグV"}, "マルハン池袋店": {"avg": 2.9, "verdict": "やや渋い(イベ日のみ?)", "conf": "低(1週)", "days": 7, "last": "6/11", "fav": ["101", "63", "90"], "shibui": "月", "mac": "マイジャグV"}};
+/*SITE_INTEL_END*/
 const DAYS={"ジュラク王子店":[{"lab":"1のつく日","n":27,"diff":1.1},{"lab":"5のつく日","n":18,"diff":0.8},{"lab":"4のつく日","n":18,"diff":-1.3},{"lab":"7のつく日","n":18,"diff":-1.7}],"マルハン池袋店":[{"lab":"7のつく日","n":14,"diff":0.5},{"lab":"月末","n":28,"diff":0.3},{"lab":"3のつく日","n":14,"diff":-1.0}],"パラッツォ千川店":[{"lab":"1のつく日","n":18,"diff":0.9},{"lab":"月末","n":24,"diff":0.8}],"TOHO池袋":[{"lab":"月末","n":81,"diff":1.1},{"lab":"4のつく日","n":83,"diff":-0.8},{"lab":"1のつく日","n":94,"diff":-0.9}]};
 // 店の座標（エリア基準の近似。新エリアは解析時に追加）
 const LOC={
@@ -386,9 +393,18 @@ function renderHalls(list){
       if(ex&&ex.className==='daybox'){ex.remove();return;}
       const box=document.createElement('div'); box.className='daybox';
       box.style.cssText='font-size:12px;color:#8a93a6;padding:8px 0 12px;border-bottom:1px solid #262c38';
+      const si=(typeof SITE_INTEL!=='undefined')?SITE_INTEL[h.name]:null;
+      let head='';
+      if(si){
+        head='<div style="color:#cdd3df;padding:2px 0 8px">【サイトセブン設定傾向・'+si.last+'まで'+si.days+'日・'+si.mac+'】<br>'+
+             '<b style="color:#3ad29f">'+si.verdict+'</b>（週平均の推定設定 '+si.avg+'）<br>'+
+             'シブい日: '+si.shibui+' / 注目台: '+si.fav.join('・')+'<br>'+
+             '<span style="color:#e8b04b">信頼度'+si.conf+'・BB/REGベース＝出率より精密。曜日は複数週で確証</span></div>'+
+             '<div style="border-top:1px solid #262c38;margin:4px 0 8px"></div>';
+      }
       if(DAYS[h.name]){
-        box.innerHTML='【日付傾向・参考】'+DAYS[h.name].map(p=>`<br>${p.lab}: ${p.diff>0?'やや甘い+':''}${p.diff}% <span style="opacity:.6">(N=${p.n})</span>`).join('')+'<br><span style="color:#e8b04b">※差は誤差レベル。強い日はまだ無い</span>';
-      } else { box.innerHTML='日付データ不足（深掘り待ち）'; }
+        box.innerHTML=head+'【みんレポ日付傾向・参考】'+DAYS[h.name].map(p=>`<br>${p.lab}: ${p.diff>0?'やや甘い+':''}${p.diff}% <span style="opacity:.6">(N=${p.n})</span>`).join('')+'<br><span style="color:#e8b04b">※差は誤差レベル。強い日はまだ無い</span>';
+      } else { box.innerHTML=head+(head?'':'日付データ不足（深掘り待ち）'); }
       d.after(box);
     };
     hd.appendChild(d);
@@ -540,6 +556,38 @@ function renderStores(){
     +'<button class="ghost" onclick="clearStores()" style="margin-top:10px">記録を全消去</button>'
     +'<div class="note">高設定率＝記録した日の平均。×で個別削除・全消去で全部リセット。閉店後に何日も記録すると精度UP。</div>';
 }
+function renderAI(){
+  const el=document.getElementById('aiPanel'); if(!el) return;
+  if(typeof SITE_INTEL==='undefined'||!Object.keys(SITE_INTEL).length){
+    el.innerHTML='<div class="note">サイトセブンの分析データがまだ無い。取得すると自動で出る。</div>'; return;
+  }
+  const arr=Object.keys(SITE_INTEL).map(k=>Object.assign({store:k},SITE_INTEL[k]));
+  arr.sort((a,b)=>b.avg-a.avg);
+  const top=arr[0];
+  function col(v){return v>=3.2?'#3ad29f':(v>=2.9?'#e8b04b':'#8a93a6');}
+  function sec(v){return v>=3.6?'設定をよく使う':(v>=3.1?'中間設定を使う':(v>=2.6?'やや渋い':'渋い'));}
+  // おすすめ一言
+  let html='<div style="background:#13251f;border:1px solid #3ad29f;border-radius:9px;padding:10px;margin-bottom:10px">'+
+    '<div style="color:#3ad29f;font-weight:700">📍 今おすすめ＝'+top.store+'</div>'+
+    '<div style="font-size:12px;color:#cdd3df;margin-top:3px">埼京線で設定が一番入ってる畑（週平均の推定設定 '+top.avg+'）。まず行くならここ。</div></div>';
+  // 各店
+  arr.forEach((s,i)=>{
+    const fav=(s.fav&&s.fav.length)?('注目台 '+s.fav.join('・')):'';
+    const shibui=(s.shibui&&s.shibui!=='なし')?(s.shibui+'はシブめ'):'';
+    const bits=[sec(s.avg),shibui,fav].filter(Boolean).join(' ／ ');
+    html+='<div style="padding:9px 0;border-bottom:1px solid #262c38">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<span style="font-weight:600">'+(i+1)+'. '+s.store+'</span>'+
+      '<span style="font-weight:700;color:'+col(s.avg)+'">推定設定 '+s.avg+'</span></div>'+
+      '<div style="font-size:12px;color:#cdd3df;margin-top:2px">'+bits+'</div>'+
+      '<div style="font-size:11px;color:#8a93a6;margin-top:1px">'+s.last+'まで'+s.days+'日・信頼度'+s.conf+'</div></div>';
+  });
+  html+='<div class="note" style="margin-top:8px">BB/REGから設定をベイズ推定＝出率より精密。'+
+    '<b>数字が高い店ほど設定を使う畑。</b></div>'+
+    '<div class="warn">⚠ まだ各店1週間分。曜日のクセは複数週で確証。これは「畑選び」で、当日は③で台を選ぶこと。</div>';
+  el.innerHTML=html;
+}
+renderAI();
 function deleteStoreHall(hall){
   if(!confirm(hall+'の記録を消す？'))return;
   saveStoreLog(getStoreLog().filter(l=>l.hall!==hall)); renderStores();
