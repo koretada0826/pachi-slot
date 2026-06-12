@@ -123,6 +123,16 @@
     <div class="note" id="ocrstatus">スクショを選ぶと自動で読んで「座れ:台○」を出す。電波が必要。</div>
   </div>
   <div class="result" id="result"></div>
+  <div class="card" style="border-color:#e8b04b">
+    <label>🎯 今打ってる台を見切り判定（台のカウンターの数字を入れる）</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center">
+      <input id="mk_g" inputmode="numeric" placeholder="回転数">
+      <input id="mk_bb" inputmode="numeric" placeholder="BIG">
+      <input id="mk_rb" inputmode="numeric" placeholder="REG">
+      <button onclick="mikiri()" style="margin:0;width:auto;padding:11px 14px">判定</button>
+    </div>
+    <div id="mk_result" class="note" style="margin-top:8px">台の上のデータカウンターの「回転数・BIG・REG」を入れる→続行かヤメかを判定。機種は上で選んだもの。2500回転＋高設定30%未満でヤメ。</div>
+  </div>
   <details class="card">
     <summary style="cursor:pointer;color:#8a93a6;font-size:14px">うまく読めない時だけ開く（貼り付け／手直し）</summary>
     <div style="margin-top:12px">
@@ -392,6 +402,26 @@ function judge(){
       <div class="meta">高設定(5-6) ${(m.high*100).toFixed(0)}% ／ 設定6 ${(m.six*100).toFixed(0)}% ／ REG ${regP}（軽いほど高設定）${kuseHit?' ／ <b style="color:#e2574c">店のクセ通り＝今日も濃厚</b>':''}</div>`;
     el.appendChild(d);
   });
+}
+// 🎯 今打ってる1台の見切り判定（2500回転＋高設定30%未満でヤメ）
+function mikiri(){
+  const spec=MACHINES[sel.value];
+  const G=+(document.getElementById('mk_g').value||'').replace(/[, ]/g,'');
+  const bb=+(document.getElementById('mk_bb').value||'').replace(/[, ]/g,'');
+  const rb=+(document.getElementById('mk_rb').value||'').replace(/[, ]/g,'');
+  const el=document.getElementById('mk_result');
+  if(!G||isNaN(bb)||isNaN(rb)){el.innerHTML='回転数・BIG・REGを入れてね（台の上のカウンターを見て）。';return;}
+  const prior=PRIORS[document.getElementById('prior').value];
+  const p=estimate(spec,G,bb,rb,prior);
+  const high=Math.round((p[4]+p[5])*100);
+  const regP=rb?('1/'+Math.round(G/rb)):'-';
+  let v,c;
+  if(G<1500){v='⏳ まだ判断早い → 続行';c='var(--warn)';}
+  else if(high>=50){v='◎ 続行（高設定濃厚）';c='var(--accent)';}
+  else if(high<30&&G>=2500){v='× ヤメて移動（低設定濃厚）';c='var(--bad)';}
+  else {v='△ グレー → 回せる時間と相談';c='var(--warn)';}
+  el.innerHTML='<b style="color:'+c+';font-size:16px">'+v+'</b><br>'+G+'回転 ／ 高設定(5-6) <b>'+high+'%</b> ／ REG '+regP+'（軽いほど高設定）'+
+    (G<1500?'<br><span style="color:var(--warn)">2500回転くらいまで回してから判断</span>':'');
 }
 
 // ① 店ランキング + ② 日付傾向（取得済みデータ。2026-06・池袋/北区/戸田）
